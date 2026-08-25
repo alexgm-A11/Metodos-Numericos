@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Herramienta interactiva para el curso de Métodos Numéricos: resuelve raíces de ecuaciones no lineales con los métodos de Bisección y Falsa Posición.">
+    <meta name="author" content="Alex — Universidad Peruana Unión">
+    <title>Raíces de Ecuaciones · Bisección y Falsa Posición</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Sidebar de Navegación -->
+    <nav class="sidebar" aria-label="Navegación principal">
+        <div class="sidebar-header">
+            <h1>MN<span>Lab</span></h1>
+            <p class="sidebar-sub">Métodos Numéricos</p>
+        </div>
+
+        <!-- Toggle de tema -->
+        <div class="theme-toggle-wrapper">
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+                <span class="theme-icon sun">☀️</span>
+                <span class="theme-track">
+                    <span class="theme-thumb"></span>
+                </span>
+                <span class="theme-icon moon">🌙</span>
+            </button>
+        </div>
+
+        <ul class="nav-list">
+            <li>
+                <button type="button" class="nav-link active" id="tab-p1" data-tab="p1" role="tab" aria-selected="true" aria-controls="p1">
+                    <span class="nav-icon">📡</span>
+                    <span class="nav-text">Bisección</span>
+                    <span class="nav-badge">Enlace</span>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p2" data-tab="p2" role="tab" aria-selected="false" aria-controls="p2">
+                    <span class="nav-icon">☁️</span>
+                    <span class="nav-text">Falsa Posición</span>
+                    <span class="nav-badge">Nube</span>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p3" data-tab="p3" role="tab" aria-selected="false" aria-controls="p3">
+                    <span class="nav-icon">🌡️</span>
+                    <span class="nav-text">Punto Fijo</span>
+                    <span class="nav-badge">temperatura</span>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p4" data-tab="p4" role="tab" aria-selected="false" aria-controls="p4">
+                    <span class="nav-icon">💾</span>
+                    <span class="nav-text">Newton-Raphson</span>
+                    <span class="nav-badge">Almacenar</span>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p5" data-tab="p5" role="tab" aria-selected="false" aria-controls="p5">
+                    <span class="nav-icon">🖥️</span>
+                    <span class="nav-text">Secante</span>
+                    <span class="nav-badge">software</span>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p6" data-tab="p6" role="tab" aria-selected="false" aria-controls="p6">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Personalizado</span>
+                    <span class="nav-badge">5 métodos</span>
+                </button>
+            </li>
+        </ul>
+               <!-- 👇 TARJETA DE PERFIL MINIMALISTA 👇 -->
+        <div class="profile-mini">
+            <div class="profile-mini-avatar">
+                <span>AG</span>
+            </div>
+            <div class="profile-mini-info">
+                <p class="profile-mini-name">Alex Guillen</p>
+                <p class="profile-mini-role">Ing. de Sistemas</p>
+            </div>
+        </div>
+        <!-- 👆 FIN DE LA TARJETA 👆 -->
+        <div class="sidebar-footer">
+            <p>UPeU · GAA</p>
+            <p class="sidebar-version">v2.0</p>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal -->
+    <main class="main-content">
+        <header class="page-header">
+            <div class="header-text">
+                <h1>Raíces de ecuaciones no lineales</h1>
+                <p class="sub">Sesión 3 · Métodos abiertos: Punto Fijo, Newton-Raphson y Secante, con resolución de problemas y funciones personalizadas.</p>
+            </div>
+            <div class="header-status">
+                <span class="status-dot"></span>
+                <span class="status-text">Sesión 3 · GAA</span>
+            </div>
+        </header>
+
+        <!-- ===================== PROBLEMA 1 ===================== -->
+        <section class="panel active" id="p1" role="tabpanel" aria-labelledby="tab-p1">
+            <div class="card">
+                <h2>Interpretación matemática <span class="tag">Paso 1</span></h2>
+                <p>Una empresa de telecomunicaciones necesita dimensionar la capacidad <code>C</code> (en Mbps) de un enlace de datos. El tiempo de espera promedio de los paquetes, según un modelo de colas M/M/1 simplificado, es:</p>
+                <div class="formula">T(C) = 1 / (C − 8.5) − 0.35·ln(C − 2)<small>Dominio válido: C &gt; 8.5 (estabilidad del sistema)</small></div>
+                <p>La capacidad óptima es aquella donde el tiempo de espera se anula. Se plantea entonces la ecuación f(C) = 0:</p>
+                <div class="formula">f(C) = 1 / (C − 8.5) − 0.35·ln(C − 2) = 0</div>
+            </div>
+
+            <div class="card">
+                <h2>Justificación del intervalo [a, b] <span class="tag">Paso 2</span></h2>
+                <p>Se evalúa f(C) por signos para localizar un cambio de signo. Cuando C → 8.5⁺, el término 1/(C−8.5) → +∞, de modo que f(C) → +∞. Cuando C crece, ese término se aproxima a 0 mientras −0.35·ln(C−2) decrece sin límite, por lo que f(C) → −∞. Existe entonces una raíz en algún punto intermedio:</p>
+                <table class="signtable">
+                    <thead><tr><th>C (Mbps)</th><th>f(C)</th><th>Signo</th></tr></thead>
+                    <tbody>
+                        <tr><td>9.0</td><td>+1.3190</td><td class="pos">+</td></tr>
+                        <tr><td>10.0</td><td>−0.0611</td><td class="neg">−</td></tr>
+                    </tbody>
+                </table>
+                <p style="margin-top:10px;">Como f(9) &gt; 0 y f(10) &lt; 0, hay cambio de signo ⇒ se garantiza una raíz en <strong>[a, b] = [9, 10]</strong>, dentro del dominio válido C &gt; 8.5.</p>
+            </div>
+
+            <div class="card">
+                <h2>Programa — Método de Bisección <span class="tag">Paso 3</span></h2>
+                <p>Ajusta el intervalo, la tolerancia o el número máximo de iteraciones y ejecuta el método.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runProblem('p1');">
+                    <div class="field"><label for="p1-a">a (límite inferior)</label><input type="number" id="p1-a" name="p1-a" value="9" step="0.1"></div>
+                    <div class="field"><label for="p1-b">b (límite superior)</label><input type="number" id="p1-b" name="p1-b" value="10" step="0.1"></div>
+                    <div class="field"><label for="p1-tol">Tolerancia (%)</label><input type="number" id="p1-tol" name="p1-tol" value="0.5" step="0.1"></div>
+                    <div class="field"><label for="p1-max">Iter. máximas</label><input type="number" id="p1-max" name="p1-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular raíz</button>
+                </form>
+                <p id="p1-error" class="err" role="alert"></p>
+                <div id="p1-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p1-code')" aria-expanded="false" aria-controls="p1-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p1-code"><span class="cm">// Método de Bisección — f(C) = 1/(C-8.5) - 0.35*ln(C-2)</span>
+<span class="kw">function</span> <span class="fn">f</span>(C) {
+  <span class="kw">return</span> <span class="num">1</span> / (C - <span class="num">8.5</span>) - <span class="num">0.35</span> * Math.log(C - <span class="num">2</span>);
+}
+
+<span class="kw">function</span> <span class="fn">biseccion</span>(a, b, tol, maxIter) {
+  <span class="kw">let</span> iter = [];
+  <span class="kw">let</span> xrAnt = <span class="kw">null</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">1</span>; i &lt;= maxIter; i++) {
+    <span class="kw">const</span> xr = (a + b) / <span class="num">2</span>;
+    <span class="kw">const</span> fxr = f(xr);
+    <span class="kw">const</span> err = xrAnt === <span class="kw">null</span> ? <span class="kw">null</span> : Math.abs((xr - xrAnt) / xr) * <span class="num">100</span>;
+    iter.push({ i, a, b, xr, fxr, err });
+    <span class="kw">if</span> (err !== <span class="kw">null</span> &amp;&amp; err &lt; tol) <span class="kw">break</span>;
+    <span class="kw">if</span> (f(a) * fxr &lt; <span class="num">0</span>) b = xr; <span class="kw">else</span> a = xr;
+    xrAnt = xr;
+  }
+  <span class="kw">return</span> iter;
+}</pre>
+            </div>
+        </section>
+
+        <!-- ===================== PROBLEMA 2 ===================== -->
+        <section class="panel" id="p2" role="tabpanel" aria-labelledby="tab-p2">
+            <div class="card">
+                <h2>Interpretación matemática <span class="tag">Paso 1</span></h2>
+                <p>Una empresa evalúa migrar un sistema on-premise hacia la nube. El costo acumulado de mantenerlo en servidores propios, en miles de soles, en función del tiempo <code>t</code> (años):</p>
+                <div class="formula">C₁(t) = 45 + 12t</div>
+                <p>El costo acumulado de operarlo en la nube (migración inicial + costo variable exponencial por consumo proyectado):</p>
+                <div class="formula">C₂(t) = 20·e^(0.4t)</div>
+                <p>El punto de equilibrio ocurre donde ambos costos se igualan, es decir, la raíz de:</p>
+                <div class="formula">f(t) = C₁(t) − C₂(t) = 45 + 12t − 20·e^(0.4t) = 0</div>
+            </div>
+
+            <div class="card">
+                <h2>Justificación del intervalo [a, b] <span class="tag">Paso 2</span></h2>
+                <p>Se evalúa f(t) entre 0 y 5 años:</p>
+                <table class="signtable">
+                    <thead><tr><th>t (años)</th><th>f(t)</th><th>Signo</th></tr></thead>
+                    <tbody>
+                        <tr><td>0</td><td>+25.000</td><td class="pos">+</td></tr>
+                        <tr><td>3</td><td>+14.598</td><td class="pos">+</td></tr>
+                        <tr><td>5</td><td>−42.777</td><td class="neg">−</td></tr>
+                    </tbody>
+                </table>
+                <p style="margin-top:10px;">En t = 0 el costo local es menor (la nube exige inversión inicial), pero como C₂(t) crece exponencialmente termina superando a C₁(t), que crece de forma lineal. Como f(0) &gt; 0 y f(5) &lt; 0, hay cambio de signo ⇒ raíz garantizada en <strong>[a, b] = [0, 5]</strong>.</p>
+            </div>
+
+            <div class="card">
+                <h2>Programa — Método de Falsa Posición <span class="tag">Paso 3</span></h2>
+                <p>Ajusta el intervalo, la tolerancia o el número máximo de iteraciones y ejecuta el método.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runProblem('p2');">
+                    <div class="field"><label for="p2-a">a (límite inferior)</label><input type="number" id="p2-a" name="p2-a" value="0" step="0.1"></div>
+                    <div class="field"><label for="p2-b">b (límite superior)</label><input type="number" id="p2-b" name="p2-b" value="5" step="0.1"></div>
+                    <div class="field"><label for="p2-tol">Tolerancia (%)</label><input type="number" id="p2-tol" name="p2-tol" value="0.5" step="0.1"></div>
+                    <div class="field"><label for="p2-max">Iter. máximas</label><input type="number" id="p2-max" name="p2-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular raíz</button>
+                </form>
+                <p id="p2-error" class="err" role="alert"></p>
+                <div id="p2-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p2-code')" aria-expanded="false" aria-controls="p2-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p2-code"><span class="cm">// Método de Falsa Posición — f(t) = 45 + 12t - 20*e^(0.4t)</span>
+<span class="kw">function</span> <span class="fn">f</span>(t) {
+  <span class="kw">return</span> <span class="num">45</span> + <span class="num">12</span> * t - <span class="num">20</span> * Math.exp(<span class="num">0.4</span> * t);
+}
+
+<span class="kw">function</span> <span class="fn">falsaPosicion</span>(a, b, tol, maxIter) {
+  <span class="kw">let</span> iter = [];
+  <span class="kw">let</span> xrAnt = <span class="kw">null</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">1</span>; i &lt;= maxIter; i++) {
+    <span class="kw">const</span> fa = f(a), fb = f(b);
+    <span class="kw">const</span> xr = b - fb * (a - b) / (fa - fb); <span class="cm">// interpolación lineal</span>
+    <span class="kw">const</span> fxr = f(xr);
+    <span class="kw">const</span> err = xrAnt === <span class="kw">null</span> ? <span class="kw">null</span> : Math.abs((xr - xrAnt) / xr) * <span class="num">100</span>;
+    iter.push({ i, a, b, xr, fxr, err });
+    <span class="kw">if</span> (err !== <span class="kw">null</span> &amp;&amp; err &lt; tol) <span class="kw">break</span>;
+    <span class="kw">if</span> (fa * fxr &lt; <span class="num">0</span>) b = xr; <span class="kw">else</span> a = xr;
+    xrAnt = xr;
+  }
+  <span class="kw">return</span> iter;
+}</pre>
+            </div>
+        </section>
+
+        <!-- ===================== PROBLEMA PERSONALIZADO ===================== -->
+        
+        <!-- ===================== PROBLEMA 3: PUNTO FIJO ===================== -->
+        <section class="panel" id="p3" role="tabpanel" aria-labelledby="tab-p3">
+            <div class="card">
+                <h2>Problema 1 · Método de Punto Fijo <span class="tag">Sesión 3</span></h2>
+                <p>Un centro de datos debe mantener la temperatura de una sala de servidores en equilibrio. La temperatura de equilibrio <code>T</code>, en °C, satisface:</p>
+                <div class="formula">T = 18 + 8e<sup>−0.15T</sup></div>
+                <p>Se emplea directamente la forma de iteración <code>T = g(T)</code> y la aproximación inicial indicada en la guía:</p>
+                <div class="formula">g(T) = 18 + 8e<sup>−0.15T</sup> &nbsp;&nbsp; | &nbsp;&nbsp; T<sub>0</sub> = 20</div>
+            </div>
+            <div class="card">
+                <h2>Programa — Método de Punto Fijo <span class="tag">Paso 3</span></h2>
+                <p>La guía indica mostrar cada iteración, la variable, la función evaluada y el error relativo porcentual. El criterio de parada es ε<sub>a</sub> ≤ 0.01% o 50 iteraciones.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runProblem('p3');">
+                    <div class="field"><label for="p3-x0">T₀ (inicial)</label><input type="number" id="p3-x0" value="20" step="0.1"></div>
+                    <div class="field"><label for="p3-tol">Tolerancia (%)</label><input type="number" id="p3-tol" value="0.01" step="0.01"></div>
+                    <div class="field"><label for="p3-max">Iter. máximas</label><input type="number" id="p3-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular temperatura</button>
+                </form>
+                <p id="p3-error" class="err" role="alert"></p>
+                <div id="p3-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p3-code')" aria-expanded="false" aria-controls="p3-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p3-code"><span class="cm">// Punto Fijo — T = 18 + 8e^(-0.15T)</span>
+<span class="kw">function</span> <span class="fn">g</span>(T) {
+  <span class="kw">return</span> <span class="num">18</span> + <span class="num">8</span> * Math.exp(-<span class="num">0.15</span> * T);
+}</pre>
+            </div>
+        </section>
+
+        <!-- ===================== PROBLEMA 4: NEWTON-RAPHSON ===================== -->
+        <section class="panel" id="p4" role="tabpanel" aria-labelledby="tab-p4">
+            <div class="card">
+                <h2>Problema 2 · Método de Newton-Raphson <span class="tag">Sesión 3</span></h2>
+                <p>Una empresa desea dimensionar un sistema de almacenamiento. El tiempo promedio de respuesta <code>t</code>, en milisegundos, se obtiene resolviendo:</p>
+                <div class="formula">f(t) = t³ − 7t − 5 = 0</div>
+                <p>La solución positiva representa el tiempo de respuesta asociado a una condición de operación. Para Newton-Raphson se usa:</p>
+                <div class="formula">t<sub>n+1</sub> = t<sub>n</sub> − f(t<sub>n</sub>) / f′(t<sub>n</sub>) &nbsp;&nbsp; | &nbsp;&nbsp; f′(t) = 3t² − 7</div>
+                <p>La guía no fija un valor inicial para este problema; se propone <strong>t₀ = 2</strong> como valor inicial positivo y cercano a la raíz positiva.</p>
+            </div>
+            <div class="card">
+                <h2>Programa — Método de Newton-Raphson <span class="tag">Paso 3</span></h2>
+                <p>Modifica el valor inicial, la tolerancia y las iteraciones máximas. El programa controla también el caso en que la derivada sea cero o demasiado cercana a cero.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runProblem('p4');">
+                    <div class="field"><label for="p4-x0">t₀ (inicial)</label><input type="number" id="p4-x0" value="2" step="0.1"></div>
+                    <div class="field"><label for="p4-tol">Tolerancia (%)</label><input type="number" id="p4-tol" value="0.01" step="0.01"></div>
+                    <div class="field"><label for="p4-max">Iter. máximas</label><input type="number" id="p4-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular raíz</button>
+                </form>
+                <p id="p4-error" class="err" role="alert"></p>
+                <div id="p4-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p4-code')" aria-expanded="false" aria-controls="p4-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p4-code"><span class="cm">// Newton-Raphson — f(t) = t^3 - 7t - 5</span>
+<span class="kw">function</span> <span class="fn">f</span>(t) { <span class="kw">return</span> t**<span class="num">3</span> - <span class="num">7</span>*t - <span class="num">5</span>; }
+<span class="kw">function</span> <span class="fn">df</span>(t) { <span class="kw">return</span> <span class="num">3</span>*t**<span class="num">2</span> - <span class="num">7</span>; }
+<span class="kw">function</span> <span class="fn">newtonRaphson</span>(f, df, x0, tol, maxIter) { <span class="cm">/* iteraciones */</span> }</pre>
+            </div>
+        </section>
+
+        <!-- ===================== PROBLEMA 5: SECANTE ===================== -->
+        <section class="panel" id="p5" role="tabpanel" aria-labelledby="tab-p5">
+            <div class="card">
+                <h2>Problema 3 · Método de la Secante <span class="tag">Sesión 3</span></h2>
+                <p>Un servidor experimenta una variación en su rendimiento cuando aumenta el número de solicitudes simultáneas. El nivel de carga normalizado <code>x</code> debe satisfacer:</p>
+                <div class="formula">f(x) = e<sup>−x</sup> − x² + 0.2 = 0</div>
+                <p>Se busca el valor de <code>x</code> que identifica un punto de operación del servidor. La guía no especifica dos valores iniciales, por lo que se proponen <strong>x₀ = 0</strong> y <strong>x₁ = 1</strong>, que permiten iniciar la iteración en una zona cercana a una raíz.</p>
+            </div>
+            <div class="card">
+                <h2>Programa — Método de la Secante <span class="tag">Paso 3</span></h2>
+                <p>La secante usa dos aproximaciones iniciales y no requiere derivada. El criterio de parada es ε<sub>a</sub> ≤ 0.01% o 50 iteraciones.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runProblem('p5');">
+                    <div class="field"><label for="p5-x0">x₀ (inicial)</label><input type="number" id="p5-x0" value="0" step="0.1"></div>
+                    <div class="field"><label for="p5-x1">x₁ (inicial)</label><input type="number" id="p5-x1" value="1" step="0.1"></div>
+                    <div class="field"><label for="p5-tol">Tolerancia (%)</label><input type="number" id="p5-tol" value="0.01" step="0.01"></div>
+                    <div class="field"><label for="p5-max">Iter. máximas</label><input type="number" id="p5-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular raíz</button>
+                </form>
+                <p id="p5-error" class="err" role="alert"></p>
+                <div id="p5-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p5-code')" aria-expanded="false" aria-controls="p5-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p5-code"><span class="cm">// Secante — f(x) = exp(-x) - x^2 + 0.2</span>
+<span class="kw">function</span> <span class="fn">secante</span>(f, x0, x1, tol, maxIter) { <span class="cm">/* iteraciones */</span> }</pre>
+            </div>
+        </section>
+
+<section class="panel" id="p6" role="tabpanel" aria-labelledby="tab-p6">
+            <div class="card">
+                <h2>Ingresa tu propia función <span class="tag">Genérico</span></h2>
+                
+                <p style="margin-bottom: 6px;">
+                    Escribe f(?) usando la variable que quieras (por ejemplo <code>C</code>, <code>t</code>, <code>x</code>) — 
+                    indica su nombre en el campo <strong>"Variable"</strong> y úsala tal cual en la fórmula.
+                </p>
+                
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+                    Disponibles: <code>+ − * / ^</code>, <code>sqrt()</code> <code>exp()</code> <code>ln()</code> 
+                    <code>log10()</code> <code>sin()</code> <code>cos()</code> <code>tan()</code> <code>abs()</code> 
+                    <code>pow(a,b)</code> <code>PI</code> <code>E</code>. También acepta <code>x²</code>, <code>x³</code>, <code>√x</code>, <code>2x</code>, <code>0,15</code> y ecuaciones como <code>f(x)=0</code>. Usa <code>ln</code> para logaritmo natural.
+                </p>
+
+                <form class="controls" style="margin-bottom: 6px;" onsubmit="event.preventDefault(); runCustom();">
+                    <div class="field" style="width: 100px; flex-shrink: 0;">
+                        <label for="p6-var">Variable</label>
+                        <input type="text" id="p6-var" name="p6-var" value="x" maxlength="8" 
+                               style="width: 100%; font-size: 14px; text-align: center;">
+                    </div>
+                    
+                    <div class="field" style="flex: 2; min-width: 260px;">
+                        <label for="p6-fx" id="p6-fx-label">f(x) =</label>
+                        <input type="text" id="p6-fx" name="p6-fx" value="x^3 - x - 2" 
+                               style="width: 100%; font-size: 14px; padding: 10px 14px;">
+                    </div>
+                    
+                    <div class="field" id="p6-g-wrap" style="flex: 1; min-width: 220px; display: none;">
+                        <label for="p6-gx" id="p6-gx-label">g(x) =</label>
+                        <input type="text" id="p6-gx" name="p6-gx" value="18 + 8*exp(-0.15*x)"
+                               style="width: 100%; font-size: 14px; padding: 10px 14px;">
+                    </div>
+                    <div class="field" id="p6-df-wrap" style="flex: 1; min-width: 220px; display: none;">
+                        <label for="p6-dfx" id="p6-dfx-label">f'(x) =</label>
+                        <input type="text" id="p6-dfx" name="p6-dfx" value="3*x^2 - 7"
+                               style="width: 100%; font-size: 14px; padding: 10px 14px;">
+                    </div>
+
+                    <div class="field" style="width: 160px; flex-shrink: 0;">
+                        <label for="p6-method">Método</label>
+                        <select id="p6-method" name="p6-method" style="width: 100%;">
+                            <option value="biseccion">Bisección</option>
+                            <option value="falsaPosicion">Falsa Posición</option>
+                            <option value="puntoFijo">Punto Fijo</option>
+                            <option value="newton">Newton-Raphson</option>
+                            <option value="secante">Secante</option>
+                        </select>
+                    </div>
+                </form>
+
+                <form class="controls" style="margin-top: 12px;" onsubmit="event.preventDefault(); runCustom();">
+                    <div class="field" id="p6-a-wrap">
+                        <label for="p6-a" id="p6-a-label">a (límite inf.)</label>
+                        <input type="number" id="p6-a" name="p6-a" value="1" step="any">
+                    </div>
+                    <div class="field" id="p6-b-wrap">
+                        <label for="p6-b" id="p6-b-label">b (límite sup.)</label>
+                        <input type="number" id="p6-b" name="p6-b" value="2" step="any">
+                    </div>
+                    <div class="field">
+                        <label for="p6-tol">Tolerancia (%)</label>
+                        <input type="number" id="p6-tol" name="p6-tol" value="0.01" step="0.01">
+                    </div>
+                    <div class="field">
+                        <label for="p6-max">Iter. máximas</label>
+                        <input type="number" id="p6-max" name="p6-max" value="50" step="1">
+                    </div>
+                    <button type="submit" class="btn" style="margin-top: 2px;">▶ Calcular raíz</button>
+                </form>
+
+                <div class="examples">
+                    <span style="font-weight: 600; color: var(--text-secondary);">Según el método:</span>
+                    <span style="color: var(--text-muted);">Bisección/Falsa Posición → usa <code>a,b</code>; Secante → usa <code>x₀,x₁</code>; Newton → completa <code>f′(x)</code>; Punto Fijo → completa <code>g(x)</code>.</span>
+                    <br><span style="font-weight: 600; color: var(--text-secondary);">Ejemplos:</span>
+                    <code>x^3 - x - 2</code> ·
+                    <code>exp(-x) - x</code> ·
+                    <code>ln(x) + x - 3</code> ·
+                    <code>cos(x) - x</code> ·
+                    <br style="display: block; margin: 4px 0;">
+                    <span style="color: var(--text-muted); font-size: 12px;">Con otra variable:</span>
+                    <code>1/(C-8.5)-0.35*ln(C-2)</code> 
+                    <span style="color: var(--text-light); font-size: 12px;">(Variable = C)</span> ·
+                    <br style="display: block; margin: 2px 0;">
+                    <code>45 + 12t - 20e^(0.4t)</code>
+                    <span style="color: var(--text-light); font-size: 12px;">(Variable = t — reconoce multiplicación implícita y "e" de Euler)</span>
+                </div>
+
+                <p id="p6-error" class="err" role="alert" style="display: none;"></p>
+                <div id="p6-results" aria-live="polite"></div>
+            </div>
+        </section>
+
+        <footer class="page-footer">
+            Guía de Aprendizaje Autónomo — Métodos Numéricos · UPeU
+        </footer>
+    </main>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
