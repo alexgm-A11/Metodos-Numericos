@@ -70,6 +70,13 @@
                     <span class="nav-badge">5 métodos</span>
                 </button>
             </li>
+            <li>
+                <button type="button" class="nav-link" id="tab-p7" data-tab="p7" role="tab" aria-selected="false" aria-controls="p7">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Comparador</span>
+                    <span class="nav-badge">Todos</span>
+                </button>
+            </li>
         </ul>
                <!-- 👇 TARJETA DE PERFIL MINIMALISTA 👇 -->
         <div class="profile-mini">
@@ -396,6 +403,49 @@
 
                 <p id="p6-error" class="err" role="alert" style="display: none;"></p>
                 <div id="p6-results" aria-live="polite"></div>
+            </div>
+</section>
+
+        <!-- ===================== COMPARADOR DE LOS 5 MÉTODOS ===================== -->
+        <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
+            <div class="card">
+                <h2>Comparar un ejercicio en los cinco métodos <span class="tag">Nuevo</span></h2>
+                <p>Ingresa una función y pulsa <strong>Calcular con los 5 métodos</strong>. El sistema ejecutará Bisección, Falsa Posición, Punto Fijo, Newton-Raphson y Secante por separado.</p>
+                <p style="font-size: 13px; color: var(--text-muted);"><code>g(x)</code>, la derivada y el segundo valor son opcionales. Si solo tienes <code>x₀</code>, el sistema buscará automáticamente un intervalo y un segundo punto adecuados.</p>
+
+                <form class="compare-form" onsubmit="event.preventDefault(); runComparison();">
+                    <div class="compare-function-grid">
+                        <div class="field compare-variable">
+                            <label for="p7-var">Variable</label>
+                            <input type="text" id="p7-var" value="x" maxlength="8">
+                        </div>
+                        <div class="field">
+                            <label for="p7-fx" id="p7-fx-label">f(x) =</label>
+                            <input type="text" id="p7-fx" value="cos(x) - x">
+                        </div>
+                        <div class="field">
+                            <label for="p7-gx" id="p7-gx-label">g(x) = (opcional)</label>
+                            <input type="text" id="p7-gx" value="" placeholder="Generación automática">
+                        </div>
+                        <div class="field">
+                            <label for="p7-dfx" id="p7-dfx-label">f'(x) = (opcional)</label>
+                            <input type="text" id="p7-dfx" value="" placeholder="Derivada numérica automática">
+                        </div>
+                    </div>
+                    <div class="controls compare-controls">
+                        <div class="field"><label for="p7-a">a / x₀</label><input type="number" id="p7-a" value="0" step="any"></div>
+                        <div class="field"><label for="p7-b">b / x₁ (opcional)</label><input type="number" id="p7-b" value="" step="any" placeholder="Automático"></div>
+                        <div class="field"><label for="p7-tol">Tolerancia (%)</label><input type="number" id="p7-tol" value="0.01" step="any"></div>
+                        <div class="field"><label for="p7-max">Iter. máximas</label><input type="number" id="p7-max" value="50" step="1"></div>
+                        <button type="submit" class="btn">▶ Calcular con los 5 métodos</button>
+                    </div>
+                </form>
+
+                <div class="examples">
+                    <strong>Cómo se usan los valores:</strong> Punto Fijo y Newton usan <code>x₀=a</code>. Si proporcionas <code>b</code>, se utilizará en los otros métodos; si lo dejas vacío, se calculará automáticamente.
+                </div>
+                <p id="p7-error" class="err" role="alert" style="display: none;"></p>
+                <div id="p7-results" aria-live="polite"></div>
             </div>
         </section>
 

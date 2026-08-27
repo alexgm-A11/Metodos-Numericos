@@ -315,6 +315,12 @@ function parseExpr(str, varName) {
     .replace(/\s+/g, ' ')
     .trim();
 
+  // Notación abreviada frecuente al copiar fórmulas: 8e-0.15T = 8*exp(-0.15*T).
+  // Solo se aplica cuando después de e aparece signo, coeficiente y la variable.
+  const escapedVar = varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const compactExp = new RegExp(`(\\d+(?:\\.\\d+)?)\\s*e\\s*([+-])\\s*(\\d+(?:\\.\\d+)?)\\s*\\*?\\s*(${escapedVar})\\b`, 'gi');
+  s = s.replace(compactExp, '$1*exp($2$3*$4)');
+
   // Acepta decimales con coma (0,15) sin romper pow(a,b).
   // Las comas que pertenecen a pow(...) se protegen primero.
   s = s.replace(/pow\s*\(([^()]*)\)/gi, (m, inside) => 'pow(' + inside.replace(/,/g, '@@ARG@@') + ')');
@@ -457,7 +463,158 @@ function runCustom() {
   } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
 }
 
-// 11. INICIALIZACIÓN
+// 11. COMPARADOR: EJECUTA EL MISMO EJERCICIO EN LOS CINCO MÉTODOS
+function numericalDerivative(f) {
+  return x => {
+    const h = Math.sqrt(Number.EPSILON) * Math.max(1, Math.abs(x));
+    return (f(x + h) - f(x - h)) / (2 * h);
+  };
+}
+
+function findAutomaticBracket(f, x0) {
+  const f0 = f(x0);
+  if (!isFinite(f0)) throw new Error('f(x₀) está fuera del dominio de la función.');
+  if (f0 === 0) return [x0 - 0.5, x0];
+  let step = Math.max(0.25, Math.abs(x0) * 0.1);
+  for (let i = 0; i < 60; i++) {
+    const left = x0 - step, right = x0 + step;
+    const fl = f(left), fr = f(right);
+    if (isFinite(fl) && fl * f0 <= 0) return [left, x0];
+    if (isFinite(fr) && f0 * fr <= 0) return [x0, right];
+    if (isFinite(fl) && isFinite(fr) && fl * fr <= 0) return [left, right];
+    step *= 1.45;
+  }
+  throw new Error('No se encontró automáticamente un intervalo con cambio de signo. Ingresa un segundo valor b.');
+}
+
+function fixedPointFromEquation(expression, varName) {
+  const parts = String(expression).split('=');
+  if (parts.length !== 2) return null;
+  const left = parts[0].trim();
+  const right = parts[1].trim();
+  const plainVariable = new RegExp(`^${varName}$`, 'i');
+  if (plainVariable.test(left)) return parseExpr(right, varName);
+  if (plainVariable.test(right)) return parseExpr(left, varName);
+  return null;
+}
+
+function comparisonStatus(rows, tol) {
+  if (!rows || rows.length === 0) return { label: 'Sin iteraciones', className: 'failed' };
+  const last = rows.at(-1);
+  if (last.invalid || !isFinite(last.xr) || !isFinite(last.fxr)) return { label: 'No pudo continuar', className: 'failed' };
+  if (Math.abs(last.fxr) <= 1e-10 || (last.err !== null && last.err <= tol)) return { label: 'Convergió ✓', className: 'success' };
+  return { label: 'No convergió', className: 'warning' };
+}
+
+function renderComparisonMethod(result, tol) {
+  if (result.error) {
+    return `<article class="method-result failed"><div class="method-title"><h3>${result.label}</h3><span class="method-state failed">No ejecutado</span></div><p class="method-message">${result.error}</p></article>`;
+  }
+  const last = result.rows.at(-1);
+  const status = comparisonStatus(result.rows, tol);
+  return `<article class="method-result">
+    <div class="method-title"><h3>${result.label}</h3><span class="method-state ${status.className}">${status.label}</span></div>
+    <div class="method-stats">
+      <div><span>Raíz aproximada</span><strong>${fmt(last.xr, 7)}</strong></div>
+      <div><span>f(raíz)</span><strong>${fmt(last.fxr, 8)}</strong></div>
+      <div><span>Iteraciones</span><strong>${result.rows.length}</strong></div>
+      <div><span>Error final</span><strong>${last.err === null ? '—' : fmt(last.err, 6) + '%'}</strong></div>
+    </div>
+    <div class="chart-box"><div class="cap">Gráfico de convergencia — ${result.label}</div>${buildChartSVG(result.rows, result.color) || '<p class="method-message">Se obtuvo una raíz exacta antes de poder calcular errores sucesivos.</p>'}</div>
+    <details class="iteration-details"><summary>Ver ${result.rows.length} iteraciones</summary><div class="table-wrap"><table class="iters"><thead>${tableHeader(result.type)}</thead><tbody>${renderRows(result.rows, result.type)}</tbody></table></div></details>
+  </article>`;
+}
+
+function runComparison() {
+  const errBox = document.getElementById('p7-error');
+  const resBox = document.getElementById('p7-results');
+  errBox.style.display = 'none'; errBox.textContent = ''; resBox.innerHTML = '';
+  const varName = document.getElementById('p7-var').value.trim() || 'x';
+  const a = parseFloat(document.getElementById('p7-a').value);
+  const bText = document.getElementById('p7-b').value.trim();
+  const suppliedB = bText === '' ? null : parseFloat(bText);
+  const tol = parseFloat(document.getElementById('p7-tol').value);
+  const maxIter = parseInt(document.getElementById('p7-max').value);
+  if (!isFinite(a) || (suppliedB !== null && (!isFinite(suppliedB) || a === suppliedB)) || !isFinite(tol) || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+    errBox.style.display = 'block';
+    errBox.textContent = 'Ingresa un valor inicial válido, una tolerancia positiva y un máximo de iteraciones entero. Si escribes el segundo valor, debe ser diferente del primero.';
+    return;
+  }
+
+  try {
+    const functionText = document.getElementById('p7-fx').value.trim();
+    const fixedPointText = document.getElementById('p7-gx').value.trim();
+    let f = parseExpr(functionText, varName);
+    let enteredAsG = null;
+    let bracket;
+    if (suppliedB === null) {
+      try {
+        bracket = findAutomaticBracket(f, a);
+      } catch (bracketError) {
+        // Si solo se escribió el lado derecho de x=g(x), lo reconoce como g
+        // y construye f(x)=x-g(x) para aplicar los cinco métodos.
+        if (fixedPointText || functionText.includes('=')) throw bracketError;
+        enteredAsG = f;
+        f = x => x - enteredAsG(x);
+        bracket = findAutomaticBracket(f, a);
+      }
+    } else {
+      bracket = [a, suppliedB];
+    }
+    const bracketA = bracket[0], bracketB = bracket[1];
+    const secantX1 = suppliedB === null ? (bracketB === a ? bracketA : bracketB) : suppliedB;
+    const derivativeText = document.getElementById('p7-dfx').value.trim();
+    const df = derivativeText ? parseExpr(derivativeText, varName) : numericalDerivative(f);
+    let automaticG = false;
+    let equationG = false;
+    let g;
+    if (fixedPointText) {
+      g = parseExpr(fixedPointText, varName);
+    } else if (enteredAsG) {
+      g = enteredAsG;
+      equationG = true;
+    } else {
+      g = fixedPointFromEquation(functionText, varName);
+      if (g) {
+        equationG = true;
+      } else {
+        // Convierte f(x)=0 en x=g(x) usando una pendiente fija cercana al inicio:
+        // g(x) = x - f(x)/m. Es una formulación válida de Punto Fijo.
+        let slope = df(a);
+        if (!isFinite(slope) || Math.abs(slope) < 1e-10) slope = df((bracketA + bracketB) / 2);
+        if (!isFinite(slope) || Math.abs(slope) < 1e-10) throw new Error('No se pudo generar g(x) automáticamente porque la derivada inicial es cero. Escribe un despeje g(x).');
+        g = x => x - f(x) / slope;
+        automaticG = true;
+      }
+    }
+    const definitions = [
+      { label: 'Bisección', type: 'bracket', color: '#4f8f87', run: () => { if (!isFinite(f(bracketA)) || !isFinite(f(bracketB))) throw new Error('Los extremos están fuera del dominio de f.'); if (f(bracketA) * f(bracketB) > 0) throw new Error(`No hay cambio de signo en [${bracketA}, ${bracketB}].`); return biseccion(f, bracketA, bracketB, tol, maxIter); } },
+      { label: 'Falsa Posición', type: 'bracket', color: '#c28b52', run: () => { if (!isFinite(f(bracketA)) || !isFinite(f(bracketB))) throw new Error('Los extremos están fuera del dominio de f.'); if (f(bracketA) * f(bracketB) > 0) throw new Error(`No hay cambio de signo en [${bracketA}, ${bracketB}].`); return falsaPosicion(f, bracketA, bracketB, tol, maxIter); } },
+      { label: equationG ? 'Punto Fijo (g de la ecuación)' : (automaticG ? 'Punto Fijo (g automática)' : 'Punto Fijo'), type: 'fixed', color: '#8067b7', run: () => { if (!isFinite(g(a))) throw new Error('g(x₀) está fuera de su dominio.'); return puntoFijo(g, f, a, tol, maxIter); } },
+      { label: 'Newton-Raphson', type: 'newton', color: '#ca6573', run: () => { if (!isFinite(f(a)) || !isFinite(df(a))) throw new Error('f(x₀) o su derivada no es finita.'); return newtonRaphson(f, df, a, tol, maxIter); } },
+      { label: 'Secante', type: 'secant', color: '#3977a8', run: () => secante(f, a, secantX1, tol, maxIter) }
+    ];
+    const results = definitions.map(def => {
+      try {
+        const rows = def.run();
+        if (!rows.length) throw new Error('No se generaron iteraciones.');
+        return { ...def, rows };
+      } catch (error) { return { ...def, error: error.message }; }
+    });
+    const completed = results.filter(r => !r.error);
+    const converged = completed.filter(r => comparisonStatus(r.rows, tol).className === 'success').length;
+    resBox.innerHTML = `<div class="comparison-summary">
+      <div><span>Métodos evaluados</span><strong>5</strong></div>
+      <div><span>Convergieron</span><strong>${converged}</strong></div>
+      <div><span>Función</span><strong>f(${varName})</strong></div>
+      <div><span>Valores usados</span><strong>${suppliedB === null ? 'x₁ automático' : 'x₀ y x₁'}</strong></div>
+    </div><div class="method-results">${results.map(r => renderComparisonMethod(r, tol)).join('')}</div>`;
+  } catch (error) {
+    errBox.style.display = 'block'; errBox.textContent = error.message;
+  }
+}
+
+// 12. INICIALIZACIÓN
 document.addEventListener('DOMContentLoaded', () => {
   runProblem('p1');
   runProblem('p2');
@@ -476,5 +633,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const v=p3VarInput.value.trim()||'x';
     if(gLabel) gLabel.textContent=`g(${v}) =`;
     if(dfLabel) dfLabel.textContent=`f'(${v}) =`;
+  });
+  const compareVar = document.getElementById('p7-var');
+  if (compareVar) compareVar.addEventListener('input', () => {
+    const v = compareVar.value.trim() || 'x';
+    document.getElementById('p7-fx-label').textContent = `f(${v}) =`;
+    document.getElementById('p7-gx-label').textContent = `g(${v}) = (opcional)`;
+    document.getElementById('p7-dfx-label').textContent = `f'(${v}) = (opcional)`;
   });
 });

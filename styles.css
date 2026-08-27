@@ -1088,3 +1088,78 @@ pre.code .num { color: var(--accent-amber); }
 #p6-b-wrap[hidden] {
     display: none !important;
 }
+
+/* --- Comparador de los cinco métodos --- */
+.compare-form { margin-top: 14px; }
+.compare-function-grid {
+    display: grid;
+    grid-template-columns: 100px repeat(3, minmax(190px, 1fr));
+    gap: 10px;
+}
+.compare-function-grid .field input { width: 100%; }
+.compare-variable input { text-align: center; }
+.compare-controls { margin-top: 12px; gap: 12px; }
+#p7 .card { padding: 24px 28px; }
+#p7 .examples { margin-top: 10px; padding: 10px 14px; }
+.comparison-summary {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(130px, 1fr));
+    gap: 8px;
+    margin: 16px 0 12px;
+}
+.comparison-summary > div, .method-stats > div {
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 11px;
+}
+.comparison-summary span, .method-stats span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+.comparison-summary strong, .method-stats strong {
+    display: block;
+    color: var(--accent-teal-dark);
+    font-family: var(--font-mono);
+    margin-top: 3px;
+    font-size: 13px;
+}
+.method-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.method-result {
+    border: 1.5px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    background: var(--bg-card);
+}
+.method-result.failed { border-color: var(--accent-red); }
+.method-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.method-title h3 { margin: 0; color: var(--text-primary); font-size: 15px; }
+.method-state { border-radius: 100px; padding: 3px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.method-state.success { background: var(--accent-teal-light); color: var(--accent-teal-dark); }
+.method-state.warning { background: var(--accent-amber-light); color: var(--accent-amber-dark); }
+.method-state.failed { background: var(--accent-red-light); color: var(--accent-red); }
+.method-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; margin-top: 10px; }
+.method-message { color: var(--text-secondary); margin: 14px 0 0; }
+.method-result .chart-box { margin-top: 12px; }
+.method-result .chart-box .cap { margin-bottom: 5px; font-size: 9px; }
+.method-result .chart-box svg { display: block; max-height: 155px; }
+.iteration-details { margin-top: 9px; }
+.iteration-details summary { cursor: pointer; color: var(--accent-teal-dark); font-size: 13px; font-weight: 700; }
+
+@media (max-width: 1050px) {
+    .compare-function-grid { grid-template-columns: 100px 1fr; }
+    .compare-function-grid .field:nth-child(n+3) { grid-column: 1 / -1; }
+    .comparison-summary, .method-stats { grid-template-columns: repeat(2, 1fr); }
+    .method-results { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .compare-function-grid, .comparison-summary, .method-stats { grid-template-columns: 1fr; }
+    .compare-function-grid .field:nth-child(n) { grid-column: auto; }
+    .method-result { padding: 16px 12px; }
+    #p7 .card { padding: 18px 14px; }
+    .method-title { align-items: flex-start; flex-direction: column; }
+}
