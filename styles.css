@@ -1088,6 +1088,22 @@ pre.code .num { color: var(--accent-amber); }
 #p6-b-wrap[hidden] {
     display: none !important;
 }
+#p6-c-wrap[hidden] { display: none !important; }
+
+.theory-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.theory-grid article {
+    padding: 14px;
+    background: var(--bg-card-alt);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+}
+.theory-grid h3 { margin: 0 0 8px; color: var(--accent-teal-dark); font-size: 14px; }
+.theory-grid p { margin: 0; font-size: 12px; }
 
 /* --- Comparador de los cinco métodos --- */
 .compare-form { margin-top: 14px; }
@@ -1162,4 +1178,5 @@ pre.code .num { color: var(--accent-amber); }
     .method-result { padding: 16px 12px; }
     #p7 .card { padding: 18px 14px; }
     .method-title { align-items: flex-start; flex-direction: column; }
+    .theory-grid { grid-template-columns: 1fr; }
 }

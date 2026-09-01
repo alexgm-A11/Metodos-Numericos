@@ -45,7 +45,8 @@ const funcs = {
   p2: (t) => 45 + 12 * t - 20 * Math.exp(0.4 * t),
   p3: (T) => T - (18 + 8 * Math.exp(-0.15 * T)),
   p4: (t) => t ** 3 - 7 * t - 5,
-  p5: (x) => Math.exp(-x) - x ** 2 + 0.2
+  p5: (x) => Math.exp(-x) - x ** 2 + 0.2,
+  p8: (z) => ((((8 * z - 6) * z - 3) * z + 3) * z - 1)
 };
 
 const fixedGs = {
@@ -149,6 +150,35 @@ function secante(f, x0, x1, tol, maxIter) {
   return rows;
 }
 
+function muller(f, x0, x1, x2, tol, maxIter, absoluteTolerance = false) {
+  const rows = [];
+  for (let i = 1; i <= maxIter; i++) {
+    const f0 = f(x0), f1 = f(x1), f2 = f(x2);
+    const h0 = x1 - x0, h1 = x2 - x1;
+    if (![f0,f1,f2,h0,h1].every(isFinite) || Math.abs(h0) < 1e-14 || Math.abs(h1) < 1e-14) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const d0 = (f1-f0)/h0, d1 = (f2-f1)/h1;
+    const a = (d1-d0)/(h1+h0), b = a*h1+d1, c = f2;
+    const discriminant = b*b - 4*a*c;
+    if (!isFinite(discriminant) || discriminant < 0) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const radical = Math.sqrt(discriminant);
+    const den1 = b+radical, den2 = b-radical;
+    const den = Math.abs(den1) > Math.abs(den2) ? den1 : den2;
+    if (!isFinite(den) || Math.abs(den) < 1e-14) {
+      rows.push({ i, x0, x1, x2, xr:x2, fxr:f2, err:null, invalid:true }); break;
+    }
+    const dx = -2*c/den, xr = x2+dx, fxr = f(xr);
+    const err = xr !== 0 ? Math.abs(dx/xr)*100 : Math.abs(dx)*100;
+    rows.push({ i, x0, x1, x2, xr, fxr, dx:Math.abs(dx), err });
+    if (!isFinite(xr) || !isFinite(fxr) || fxr === 0 || (absoluteTolerance ? Math.abs(dx) <= tol : err <= tol)) break;
+    x0=x1; x1=x2; x2=xr;
+  }
+  return rows;
+}
+
 function fmt(n, d = 5) {
   if (n === null || n === undefined || !isFinite(n)) return '—';
   return n.toFixed(d);
@@ -201,6 +231,9 @@ function renderRows(rows, type) {
   if (type === 'secant') {
     return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.x0,6)}</td><td>${fmt(r.x1,6)}</td><td>${fmt(r.xr,6)}</td><td>${fmt(r.fxr,7)}</td><td>${r.err===null?'—':fmt(r.err,5)+'%'}</td></tr>`).join('');
   }
+  if (type === 'muller') {
+    return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.x0,6)}</td><td>${fmt(r.x1,6)}</td><td>${fmt(r.x2,6)}</td><td>${fmt(r.xr,7)}</td><td>${fmt(r.fxr,8)}</td><td>${r.err===null?'—':fmt(r.err,6)+'%'}</td></tr>`).join('');
+  }
   return rows.map(r => `<tr><td>${r.i}</td><td>${fmt(r.a,5)}</td><td>${fmt(r.b,5)}</td><td>${fmt(r.xr,5)}</td><td>${fmt(r.fxr,6)}</td><td>${r.err===null?'—':fmt(r.err,4)+'%'}</td></tr>`).join('');
 }
 
@@ -208,6 +241,7 @@ function tableHeader(type) {
   if (type === 'fixed') return '<tr><th>Iter</th><th>x anterior</th><th>x nuevo</th><th>f(x)</th><th>Error (%)</th></tr>';
   if (type === 'newton') return '<tr><th>Iter</th><th>x anterior</th><th>x nuevo</th><th>f(x)</th><th>f′(x)</th><th>Error (%)</th></tr>';
   if (type === 'secant') return '<tr><th>Iter</th><th>x₀</th><th>x₁</th><th>x nuevo</th><th>f(x)</th><th>Error (%)</th></tr>';
+  if (type === 'muller') return '<tr><th>Iter</th><th>x₀</th><th>x₁</th><th>x₂</th><th>x nuevo</th><th>f(x)</th><th>Ea (%)</th></tr>';
   return '<tr><th>Iter</th><th>a</th><th>b</th><th>xr</th><th>f(xr)</th><th>Error (%)</th></tr>';
 }
 
@@ -215,7 +249,8 @@ function showResult(id, rows, methodLabel, type, interp, color) {
   const resBox = document.getElementById(id + '-results');
   if (!rows || rows.length === 0) throw new Error('No se generaron iteraciones.');
   const last = rows[rows.length - 1];
-  const converged = last.err !== null && last.err <= parseFloat(document.getElementById(id+'-tol').value);
+  const requestedTol = parseFloat(document.getElementById(id+'-tol').value);
+  const converged = type === 'muller' && id === 'p8' ? (isFinite(last.dx) && last.dx <= requestedTol) : (last.err !== null && last.err <= requestedTol);
   const invalid = last.invalid;
   const state = invalid ? 'Revisar valores ⚠' : (converged ? 'Convergió ✓' : 'Máx. iter. alcanzado');
   const tableRows = renderRows(rows, type);
@@ -276,6 +311,26 @@ function runProblem(id) {
   } catch(e) {
     errBox.style.display='block'; errBox.textContent=e.message;
   }
+}
+
+function runMullerProblem() {
+  const errBox=document.getElementById('p8-error'), resBox=document.getElementById('p8-results');
+  errBox.style.display='none'; errBox.textContent=''; resBox.innerHTML='';
+  const x0=parseFloat(document.getElementById('p8-x0').value);
+  const x1=parseFloat(document.getElementById('p8-x1').value);
+  const x2=parseFloat(document.getElementById('p8-x2').value);
+  const tol=parseFloat(document.getElementById('p8-tol').value);
+  const maxIter=parseInt(document.getElementById('p8-max').value);
+  if (![x0,x1,x2,tol].every(isFinite) || new Set([x0,x1,x2]).size < 3 || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+    errBox.style.display='block'; errBox.textContent='Ingresa tres puntos iniciales distintos, una tolerancia positiva y un máximo de iteraciones válido.'; return;
+  }
+  try {
+    const rows=muller(funcs.p8,x0,x1,x2,tol,maxIter,true);
+    if (!rows.length || rows.at(-1).invalid) throw new Error('Müller no pudo continuar en números reales con estos puntos iniciales.');
+    const last=rows.at(-1);
+    const interp=`<strong>Interpretación:</strong> la primera raíz encontrada es <code>z ≈ ${fmt(last.xr,9)}</code>, con <code>|z|=${fmt(Math.abs(last.xr),9)} &lt; 1</code>. Esta raíz se encuentra dentro del círculo unitario.`;
+    showResult('p8',rows,'Müller','muller',interp,'#3977a8');
+  } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
 }
 
 // 9. PARSER SEGURO DE EXPRESIONES
@@ -390,6 +445,7 @@ function updateCustomFields() {
   const aLabel=document.getElementById('p6-a-label'), bLabel=document.getElementById('p6-b-label');
   const a=document.getElementById('p6-a'), b=document.getElementById('p6-b');
   const bWrap=document.getElementById('p6-b-wrap');
+  const c=document.getElementById('p6-c'), cWrap=document.getElementById('p6-c-wrap');
   if(!method) return;
 
   // Mostrar únicamente los campos que realmente necesita cada método.
@@ -403,8 +459,10 @@ function updateCustomFields() {
     bWrap.style.display = hideX1 ? 'none' : 'flex';
   }
   if (b) b.disabled = hideX1;
+  if (cWrap) { cWrap.hidden=method!=='muller'; cWrap.style.display=method==='muller'?'flex':'none'; }
+  if (c) c.disabled=method!=='muller';
 
-  if(method==='puntoFijo' || method==='newton' || method==='secante') {
+  if(method==='puntoFijo' || method==='newton' || method==='secante' || method==='muller') {
     aLabel.textContent='x₀ (inicial)';
     bLabel.textContent='x₁ (inicial)';
   } else {
@@ -417,6 +475,8 @@ function updateCustomFields() {
     a.value='2'; b.value='3';
   } else if(method==='secante') {
     a.value='0'; b.value='1';
+  } else if(method==='muller') {
+    a.value='0'; b.value='0.5'; c.value='1';
   }
 }
 
@@ -426,12 +486,16 @@ function runCustom() {
   const expr=document.getElementById('p6-fx').value, varName=document.getElementById('p6-var').value.trim()||'x';
   const method=document.getElementById('p6-method').value;
   const a=parseFloat(document.getElementById('p6-a').value), b=parseFloat(document.getElementById('p6-b').value);
+  const c=parseFloat(document.getElementById('p6-c').value);
   const tol=parseFloat(document.getElementById('p6-tol').value), maxIter=parseInt(document.getElementById('p6-max').value);
   if(!isFinite(a)||!isFinite(tol)||tol<=0||!Number.isInteger(maxIter)||maxIter<1) {
     errBox.style.display='block'; errBox.textContent='Ingresa un x₀ (o límite inferior) válido, una tolerancia positiva y un máximo de iteraciones entero.'; return;
   }
-  if((method==='biseccion'||method==='falsaPosicion'||method==='secante') && (!isFinite(b)||a===b)) {
+  if((method==='biseccion'||method==='falsaPosicion'||method==='secante'||method==='muller') && (!isFinite(b)||a===b)) {
     errBox.style.display='block'; errBox.textContent='Este método necesita dos valores iniciales/límites distintos: x₀ y x₁, o a y b.'; return;
+  }
+  if(method==='muller' && (!isFinite(c)||c===a||c===b)) {
+    errBox.style.display='block'; errBox.textContent='Müller necesita tres puntos iniciales numéricos y distintos: x₀, x₁ y x₂.'; return;
   }
   let f;
   try { f=parseExpr(expr,varName); } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; return; }
@@ -453,8 +517,10 @@ function runCustom() {
       if(!isFinite(f(a))) throw new Error('f(x₀) no es finita. Revisa el dominio de la función.');
       if(!isFinite(df(a))) throw new Error('f′(x₀) no es finita. Revisa la derivada y el valor inicial x₀.');
       rows=newtonRaphson(f,df,a,tol,maxIter); label='Newton-Raphson'; type='newton'; color='#c9a87c';
-    } else {
+    } else if(method==='secante') {
       rows=secante(f,a,b,tol,maxIter); label='Secante'; type='secant'; color='#7ba9a1';
+    } else {
+      rows=muller(f,a,b,c,tol,maxIter); label='Müller'; type='muller'; color='#3977a8';
     }
     if(!rows.length) throw new Error('No se pudo generar una iteración.');
     const last=rows.at(-1);
@@ -463,7 +529,7 @@ function runCustom() {
   } catch(e) { errBox.style.display='block'; errBox.textContent=e.message; }
 }
 
-// 11. COMPARADOR: EJECUTA EL MISMO EJERCICIO EN LOS CINCO MÉTODOS
+// 11. COMPARADOR: EJECUTA EL MISMO EJERCICIO EN LOS SEIS MÉTODOS
 function numericalDerivative(f) {
   return x => {
     const h = Math.sqrt(Number.EPSILON) * Math.max(1, Math.abs(x));
@@ -533,9 +599,10 @@ function runComparison() {
   const a = parseFloat(document.getElementById('p7-a').value);
   const bText = document.getElementById('p7-b').value.trim();
   const suppliedB = bText === '' ? null : parseFloat(bText);
+  const c = parseFloat(document.getElementById('p7-c').value);
   const tol = parseFloat(document.getElementById('p7-tol').value);
   const maxIter = parseInt(document.getElementById('p7-max').value);
-  if (!isFinite(a) || (suppliedB !== null && (!isFinite(suppliedB) || a === suppliedB)) || !isFinite(tol) || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
+  if (!isFinite(a) || !isFinite(c) || (suppliedB !== null && (!isFinite(suppliedB) || a === suppliedB)) || !isFinite(tol) || tol <= 0 || !Number.isInteger(maxIter) || maxIter < 1) {
     errBox.style.display = 'block';
     errBox.textContent = 'Ingresa un valor inicial válido, una tolerancia positiva y un máximo de iteraciones entero. Si escribes el segundo valor, debe ser diferente del primero.';
     return;
@@ -559,10 +626,13 @@ function runComparison() {
         bracket = findAutomaticBracket(f, a);
       }
     } else {
-      bracket = [a, suppliedB];
+      const fa=f(a), fb=f(suppliedB);
+      bracket=isFinite(fa)&&isFinite(fb)&&fa*fb<=0 ? [a,suppliedB] : findAutomaticBracket(f,a);
     }
     const bracketA = bracket[0], bracketB = bracket[1];
     const secantX1 = suppliedB === null ? (bracketB === a ? bracketA : bracketB) : suppliedB;
+    let mullerX2=c;
+    if(mullerX2===a||mullerX2===secantX1) mullerX2=secantX1+Math.max(0.5,Math.abs(secantX1-a));
     const derivativeText = document.getElementById('p7-dfx').value.trim();
     const df = derivativeText ? parseExpr(derivativeText, varName) : numericalDerivative(f);
     let automaticG = false;
@@ -592,7 +662,8 @@ function runComparison() {
       { label: 'Falsa Posición', type: 'bracket', color: '#c28b52', run: () => { if (!isFinite(f(bracketA)) || !isFinite(f(bracketB))) throw new Error('Los extremos están fuera del dominio de f.'); if (f(bracketA) * f(bracketB) > 0) throw new Error(`No hay cambio de signo en [${bracketA}, ${bracketB}].`); return falsaPosicion(f, bracketA, bracketB, tol, maxIter); } },
       { label: equationG ? 'Punto Fijo (g de la ecuación)' : (automaticG ? 'Punto Fijo (g automática)' : 'Punto Fijo'), type: 'fixed', color: '#8067b7', run: () => { if (!isFinite(g(a))) throw new Error('g(x₀) está fuera de su dominio.'); return puntoFijo(g, f, a, tol, maxIter); } },
       { label: 'Newton-Raphson', type: 'newton', color: '#ca6573', run: () => { if (!isFinite(f(a)) || !isFinite(df(a))) throw new Error('f(x₀) o su derivada no es finita.'); return newtonRaphson(f, df, a, tol, maxIter); } },
-      { label: 'Secante', type: 'secant', color: '#3977a8', run: () => secante(f, a, secantX1, tol, maxIter) }
+      { label: 'Secante', type: 'secant', color: '#3977a8', run: () => secante(f, a, secantX1, tol, maxIter) },
+      { label: 'Müller', type: 'muller', color: '#2f7d9b', run: () => muller(f, a, secantX1, mullerX2, tol, maxIter) }
     ];
     const results = definitions.map(def => {
       try {
@@ -604,7 +675,7 @@ function runComparison() {
     const completed = results.filter(r => !r.error);
     const converged = completed.filter(r => comparisonStatus(r.rows, tol).className === 'success').length;
     resBox.innerHTML = `<div class="comparison-summary">
-      <div><span>Métodos evaluados</span><strong>5</strong></div>
+      <div><span>Métodos evaluados</span><strong>6</strong></div>
       <div><span>Convergieron</span><strong>${converged}</strong></div>
       <div><span>Función</span><strong>f(${varName})</strong></div>
       <div><span>Valores usados</span><strong>${suppliedB === null ? 'x₁ automático' : 'x₀ y x₁'}</strong></div>
@@ -621,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
   runProblem('p3');
   runProblem('p4');
   runProblem('p5');
+  runMullerProblem();
   const method=document.getElementById('p6-method');
   if(method) {
     method.addEventListener('change', updateCustomFields);

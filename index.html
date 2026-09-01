@@ -64,10 +64,17 @@
                 </button>
             </li>
             <li>
+                <button type="button" class="nav-link" id="tab-p8" data-tab="p8" role="tab" aria-selected="false" aria-controls="p8">
+                    <span class="nav-icon">〽️</span>
+                    <span class="nav-text">Müller</span>
+                    <span class="nav-badge">Filtro IIR</span>
+                </button>
+            </li>
+            <li>
                 <button type="button" class="nav-link" id="tab-p6" data-tab="p6" role="tab" aria-selected="false" aria-controls="p6">
                     <span class="nav-icon">⚙️</span>
                     <span class="nav-text">Personalizado</span>
-                    <span class="nav-badge">5 métodos</span>
+                    <span class="nav-badge">6 métodos</span>
                 </button>
             </li>
             <li>
@@ -313,6 +320,45 @@
             </div>
         </section>
 
+        <!-- ===================== PROBLEMA 4 · MÉTODO DE MÜLLER ===================== -->
+        <section class="panel" id="p8" role="tabpanel" aria-labelledby="tab-p8">
+            <div class="card">
+                <h2>Problema 4 · Estabilidad de un filtro digital IIR <span class="tag">Método de Müller</span></h2>
+                <p>La estabilidad del filtro depende de las raíces de su polinomio característico. El sistema es estable cuando todas cumplen <code>|z| &lt; 1</code>.</p>
+                <div class="formula">D(z) = 8z⁴ − 6z³ − 3z² + 3z − 1 = 0<small>Puntos iniciales: z₀=0, z₁=0.5, z₂=1.0 · tolerancia ε=10⁻⁵</small></div>
+            </div>
+
+            <div class="card">
+                <h2>Delimitación teórica <span class="tag">Descartes · Lagrange · Horner</span></h2>
+                <div class="theory-grid">
+                    <article><h3>Criterio de Descartes</h3><p><code>D(z)</code> tiene signos +,−,−,+,−: presenta 3 cambios, por lo que posee 3 o 1 raíces reales positivas. <code>D(−z)</code> tiene signos +,+,−,−,−: presenta 1 cambio, así que posee exactamente 1 raíz real negativa.</p></article>
+                    <article><h3>Cota global de Lagrange</h3><p>Al normalizar: <code>z⁴−0.75z³−0.375z²+0.375z−0.125</code>. La cota es <code>R=1+max(0.75,0.375,0.375,0.125)=1.75</code>; todas las raíces están en <code>|z|≤1.75</code>.</p></article>
+                    <article><h3>Esquema de Horner</h3><p>El polinomio se evalúa como <code>((((8z−6)z−3)z+3)z−1)</code>, reduciendo operaciones y el error de redondeo durante las iteraciones.</p></article>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Programa — Método de Müller <span class="tag">Implementación numérica</span></h2>
+                <p>Müller interpola una parábola por tres aproximaciones y utiliza una de sus raíces como el siguiente valor.</p>
+                <form class="controls" onsubmit="event.preventDefault(); runMullerProblem();">
+                    <div class="field"><label for="p8-x0">z₀</label><input type="number" id="p8-x0" value="0" step="any"></div>
+                    <div class="field"><label for="p8-x1">z₁</label><input type="number" id="p8-x1" value="0.5" step="any"></div>
+                    <div class="field"><label for="p8-x2">z₂</label><input type="number" id="p8-x2" value="1" step="any"></div>
+                    <div class="field"><label for="p8-tol">Tolerancia ε</label><input type="number" id="p8-tol" value="0.00001" step="any"></div>
+                    <div class="field"><label for="p8-max">Iter. máximas</label><input type="number" id="p8-max" value="50" step="1"></div>
+                    <button type="submit" class="btn">▶ Calcular primera raíz</button>
+                </form>
+                <p id="p8-error" class="err" role="alert"></p>
+                <div id="p8-results" aria-live="polite"></div>
+                <button type="button" class="code-toggle" onclick="toggleCode('p8-code')" aria-expanded="false" aria-controls="p8-code">▸ Ver código fuente (JavaScript)</button>
+                <pre class="code" id="p8-code"><span class="cm">// Müller — tres puntos e interpolación cuadrática</span>
+<span class="kw">function</span> <span class="fn">muller</span>(f, z0, z1, z2, tol, maxIter) {
+  <span class="cm">// Calcula diferencias divididas y selecciona</span>
+  <span class="cm">// el denominador de mayor módulo.</span>
+}</pre>
+            </div>
+        </section>
+
 <section class="panel" id="p6" role="tabpanel" aria-labelledby="tab-p6">
             <div class="card">
                 <h2>Ingresa tu propia función <span class="tag">Genérico</span></h2>
@@ -360,6 +406,7 @@
                             <option value="puntoFijo">Punto Fijo</option>
                             <option value="newton">Newton-Raphson</option>
                             <option value="secante">Secante</option>
+                            <option value="muller">Müller</option>
                         </select>
                     </div>
                 </form>
@@ -372,6 +419,10 @@
                     <div class="field" id="p6-b-wrap">
                         <label for="p6-b" id="p6-b-label">b (límite sup.)</label>
                         <input type="number" id="p6-b" name="p6-b" value="2" step="any">
+                    </div>
+                    <div class="field" id="p6-c-wrap" hidden>
+                        <label for="p6-c">x₂ (inicial)</label>
+                        <input type="number" id="p6-c" name="p6-c" value="1" step="any">
                     </div>
                     <div class="field">
                         <label for="p6-tol">Tolerancia (%)</label>
@@ -386,7 +437,7 @@
 
                 <div class="examples">
                     <span style="font-weight: 600; color: var(--text-secondary);">Según el método:</span>
-                    <span style="color: var(--text-muted);">Bisección/Falsa Posición → usa <code>a,b</code>; Secante → usa <code>x₀,x₁</code>; Newton → completa <code>f′(x)</code>; Punto Fijo → completa <code>g(x)</code>.</span>
+                    <span style="color: var(--text-muted);">Bisección/Falsa Posición → usa <code>a,b</code>; Secante → usa <code>x₀,x₁</code>; Müller → usa <code>x₀,x₁,x₂</code>; Newton → completa <code>f′(x)</code>; Punto Fijo → completa <code>g(x)</code>.</span>
                     <br><span style="font-weight: 600; color: var(--text-secondary);">Ejemplos:</span>
                     <code>x^3 - x - 2</code> ·
                     <code>exp(-x) - x</code> ·
@@ -406,11 +457,11 @@
             </div>
 </section>
 
-        <!-- ===================== COMPARADOR DE LOS 5 MÉTODOS ===================== -->
+        <!-- ===================== COMPARADOR DE LOS 6 MÉTODOS ===================== -->
         <section class="panel" id="p7" role="tabpanel" aria-labelledby="tab-p7">
             <div class="card">
-                <h2>Comparar un ejercicio en los cinco métodos <span class="tag">Nuevo</span></h2>
-                <p>Ingresa una función y pulsa <strong>Calcular con los 5 métodos</strong>. El sistema ejecutará Bisección, Falsa Posición, Punto Fijo, Newton-Raphson y Secante por separado.</p>
+                <h2>Comparar un ejercicio en seis métodos <span class="tag">Müller incluido</span></h2>
+                <p>Ingresa una función y pulsa <strong>Calcular con los 6 métodos</strong>. El sistema ejecutará Bisección, Falsa Posición, Punto Fijo, Newton-Raphson, Secante y Müller por separado.</p>
                 <p style="font-size: 13px; color: var(--text-muted);"><code>g(x)</code>, la derivada y el segundo valor son opcionales. Si solo tienes <code>x₀</code>, el sistema buscará automáticamente un intervalo y un segundo punto adecuados.</p>
 
                 <form class="compare-form" onsubmit="event.preventDefault(); runComparison();">
@@ -435,9 +486,10 @@
                     <div class="controls compare-controls">
                         <div class="field"><label for="p7-a">a / x₀</label><input type="number" id="p7-a" value="0" step="any"></div>
                         <div class="field"><label for="p7-b">b / x₁ (opcional)</label><input type="number" id="p7-b" value="" step="any" placeholder="Automático"></div>
+                        <div class="field"><label for="p7-c">x₂ para Müller</label><input type="number" id="p7-c" value="1" step="any"></div>
                         <div class="field"><label for="p7-tol">Tolerancia (%)</label><input type="number" id="p7-tol" value="0.01" step="any"></div>
                         <div class="field"><label for="p7-max">Iter. máximas</label><input type="number" id="p7-max" value="50" step="1"></div>
-                        <button type="submit" class="btn">▶ Calcular con los 5 métodos</button>
+                        <button type="submit" class="btn">▶ Calcular con los 6 métodos</button>
                     </div>
                 </form>
 
